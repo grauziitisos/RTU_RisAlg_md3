@@ -65,7 +65,7 @@ public class Md3_061rmc160 {
         K = getInput(sc, outputStream, 'K');
         // TODO: pajautaat kaa jaabuut - ka enter no usera (un steramaa taatad kopa
         // prompt a=result:)
-         outputStream.println();
+        // outputStream.println();
         if (system_exit) {
             sc.close();
             return;
