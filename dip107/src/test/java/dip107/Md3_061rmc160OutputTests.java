@@ -18,9 +18,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-public class Md2_061rmc160OutputTests {
+public class Md3_061rmc160OutputTests {
     private ByteArrayOutputStream byteArrayOutputStream;
-    private String ObjectUnderTestName = "dip107.Md2_061rmc160";
+    private String ObjectUnderTestName = "dip107.Md3_061rmc160";
 
     @ParameterizedTest
     @ValueSource(floats = { 1 })

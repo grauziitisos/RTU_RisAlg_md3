@@ -13,7 +13,7 @@ import java.util.Scanner;
  * Hello world!
  *
  */
-public class Md2_061rmc160 {
+public class Md3_061rmc160 {
     // region utils
     private static String makeFloatString(String inputString) {
         DecimalFormat format = (DecimalFormat) DecimalFormat.getInstance();

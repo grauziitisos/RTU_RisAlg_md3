@@ -9,10 +9,10 @@ import java.lang.reflect.Method;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
 
-public class Md2_061rmc160ValueTests {
+public class Md3_061rmc160ValueTests {
 
     private ByteArrayOutputStream byteArrayOutputStream;
-    private String ObjectUnderTestName = "dip107.Md2_061rmc160";
+    private String ObjectUnderTestName = "dip107.Md3_061rmc160";
 
     // region valTests
     @ParameterizedTest
