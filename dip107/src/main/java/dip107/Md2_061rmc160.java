@@ -68,7 +68,7 @@ public class Md2_061rmc160 {
         K = getInput(sc, outputStream, 'K');
         // TODO: pajautaat kaa jaabuut - ka enter no usera (un steramaa taatad kopa
         // prompt a=result:)
-        // outputStream.println();
+         outputStream.println();
         if (system_exit) {
             sc.close();
             return;
@@ -128,7 +128,7 @@ public class Md2_061rmc160 {
             }
         }
         //endregion
-        // Trešais no beigām studenta apliecības numura cipars 1 vai 6:
+        // Trešais no beigām studenta apliecības numura cipars 1 vai 6: while/ do while/ for /for
 
     }
     // endregion

@@ -98,7 +98,8 @@ public class Md2_061rmc160OutputTests {
         if (hasOutItems)
             for (int i = 4; i <= 12; i++) {
                 // 2. masīva virsraksts
-                if (i == 7)
+                //ja peec vinjas (bez newline peec input, tad buus 7. ja peec shii ar \n tad 8)
+                if (i == 8)
                     continue;
                 assertTrue(output[i].matches("([+-]?\\d+[\\.,]\\d{2}\\s+){4}([+-]?\\d+[\\.,]\\d{2})"),
                         "Line number " + (i + 1) + System.getProperty("line.separator")
@@ -120,8 +121,7 @@ public class Md2_061rmc160OutputTests {
         runTest(getSimulatedUserInput(input + ""), ObjectUnderTestName);
         String[] output = byteArrayOutputStream.toString().split(System.getProperty("line.separator"));
         Boolean hasOutItems = output.length > 12;
-        String pattern = "([+-]?\\d+[\\.,]\\d{2}\\s+)([+-]?\\d+[\\.,]\\d{2}\\s+)([+-]?\\d+[\\.,]\\d{2}\\s+)([+-]?\\d+[\\.,]\\d{2}\\s+)([+-]?\\d+[\\.,]\\d{2})";
-        if (hasOutItems)
+        String pattern = "([+-]?\\d+[\\.,]\\d{2})\\s+([+-]?\\d+[\\.,]\\d{2})\\s+([+-]?\\d+[\\.,]\\d{2})\\s+([+-]?\\d+[\\.,]\\d{2})\\s+([+-]?\\d+[\\.,]\\d{2})";        if (hasOutItems)
             for (int i = 4; i <= 12; i++){
                 //2. masīva virsraksts
                 if(i==8) continue;
@@ -149,14 +149,14 @@ public class Md2_061rmc160OutputTests {
                                 //paarbaude jau bija (ka deriigi floati!) bet tāpat jāizsauc, lai grupas saformē - ielasa..
                                 m.find();
                                 for(int j=0; j<m.groupCount(); j++)
-                                    aArray[i-4][j]= Float.parseFloat(m.group(j));
+                                    aArray[i-4][j]= Float.parseFloat(m.group(j+1));
                             }   
                             for (int i=9; i<=12; i++){
                                 m=r.matcher(output[i]);
                                 //paarbaude jau bija (ka deriigi floati!) bet tāpat jāizsauc, lai grupas saformē - ielasa..
                                 m.find();
                                 for(int j=0; j<m.groupCount(); j++)
-                                    bArray[i-9][j]= Float.parseFloat(m.group(j));
+                                    bArray[i-9][j]= Float.parseFloat(m.group(j+1));
                             }         
                             //endregion
                             
@@ -177,13 +177,13 @@ public class Md2_061rmc160OutputTests {
                             int k=listPos.size(), cnt=0;
                             for(int i=0; i<4; i++){
                                 for(int j=0;j<5;j++){
-                                    assertEquals(cnt<k? listPos.get(cnt) : listNeg.get(cnt), bArray[i][j], 
+                                    assertEquals(cnt<k? listPos.get(cnt) : listNeg.get(cnt-k), bArray[i][j], 
                                     "The list B should be sorted list A according to specification!"
                                     +System.getProperty("line.separator")
-                                    +(cnt >1 ? "last two elements: "+(cnt-2<k? listPos.get(cnt-2) : listNeg.get(cnt-2))
-                                    + " and "+(cnt-1<k? listPos.get(cnt-1) : listNeg.get(cnt-1)) 
+                                    +(cnt >1 ? "last two elements: "+(cnt-2<k? listPos.get(cnt-2) : listNeg.get(cnt-k-2))
+                                    + " and "+(cnt-1<k? listPos.get(cnt-1) : listNeg.get(cnt-k-1)) 
                                     +System.getProperty("line.separator")
-                                    +" should be followed by "+ (cnt<k? listPos.get(cnt) : listNeg.get(cnt))
+                                    +" should be followed by "+ (cnt<k? listPos.get(cnt) : listNeg.get(cnt-k))
                                     +System.getProperty("line.separator")
                                     + " but was followed by " + bArray[i][j]
                                     :""));
