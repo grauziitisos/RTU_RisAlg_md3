@@ -54,13 +54,16 @@ Randresults(I) = CStr(a) + ", " + """" + ExcelToTestInput(Range("B3:F12")) + """
 
 'MsgBox (Randresults(I))
 Next I
+'add incorrect input test
+Dim wrongInputs() As String
+wrongInputs = Split("-1-2-3, " + Chr(34) + "input-output error" + Chr(34) + ":wasd, " + Chr(34) + "input-output error" + Chr(34) + ":вр, " + Chr(34) + "input-output error" + Chr(34) + ":0.1.23.4.5, " + Chr(34) + "input-output error" + Chr(34) + ":", ":")
 Dim fso As Object
     Set fso = CreateObject("Scripting.FileSystemObject")
 
     Dim Fileout As Object
     Set Fileout = fso.CreateTextFile(filePath, True, True)
     Fileout.Write "a, TheLastOneIsExpectedOutputResult" + vbCrLf
-    Fileout.Write Join(Randresults, vbCrLf)
+    Fileout.Write Join(Randresults, vbCrLf) + vbCrLf + Join(wrongInputs, vbCrLf)
     Fileout.Close
 End Sub
 
@@ -73,7 +76,7 @@ Function ExcelToTestInput(ByVal myRange As Range) As String
 
         ElseIf myCell.Address = "$B$3" Or myCell.Address = "$B$8" Then
         ExcelToTestInput = ExcelToTestInput & myCell.Value & vbCrLf
-        ElseIf Mid(myCell.Address, 2, 1) = "F" Then
+        ElseIf Mid(myCell.Address, 2, 1) = "F" And Not (Mid(myCell.Address, 4, 2) = "12") Then
         ExcelToTestInput = ExcelToTestInput & vbTab & Format(myCell, "0.00") & vbCrLf
         ElseIf Mid(myCell.Address, 2, 1) = "B" Then
         ExcelToTestInput = ExcelToTestInput & Format(myCell, "0.00")
