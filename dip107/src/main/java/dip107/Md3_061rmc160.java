@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
+import java.math.BigDecimal; 
+import java.math.RoundingMode;
 
 /**
  * Hello world!
@@ -58,9 +60,9 @@ public class Md3_061rmc160 {
         // Excel and calculator different values!!!!! Unable to get guaranteed precise test data
         // Therefore unable to verify!!!!
         double K;
-        double A[] = new double[20];
+        BigDecimal  A[] = new BigDecimal [20];
         String outputFormatString = "%1$.2f";
-
+//BigDecimal amount = new BigDecimal("100.05"); 
         outputStream.println("061RMC160 Oskars Grauzis 4");
         K = getInput(sc, outputStream, 'K');
         // TODO: pajautaat kaa jaabuut - ka enter no usera (un steramaa taatad kopa
@@ -75,14 +77,15 @@ public class Md3_061rmc160 {
             Random r = new Random();
             int i = 0;
             while (i < 20) {
-                A[i] = r.nextDouble() * 100 - 50;
+                A[i] = new BigDecimal(r.nextDouble() * 100 - 50);
                 i++;
             }
         } else {
-            A[0] = 0.1;
+            A[0] = new BigDecimal(0.1);
             int i = 1;
             while (i < 20) {
-                A[i] = A[i - 1] * K;
+                A[i] = A[i - 1].multiply(new BigDecimal(K));
+                outputStream.println(A[i]);
                 i++;
             }
         }
@@ -101,11 +104,11 @@ public class Md3_061rmc160 {
         } while (i < 20);
         // endregion
         // region 3. apstrāde
-        double B[] = new double[20];
-        List<Double> posList = new ArrayList<Double>();
-        List<Double> negList = new ArrayList<Double>();
+        BigDecimal B[] = new BigDecimal[20];
+        List<BigDecimal> posList = new ArrayList<BigDecimal>();
+        List<BigDecimal> negList = new ArrayList<BigDecimal>();
         for (i = 0; i < 20; i++) {
-            if (A[i] >= 0)
+            if (A[i].compareTo(new BigDecimal(0)) >= 0)
                 posList.add(A[i]);
             else
                 negList.add(A[i]);
