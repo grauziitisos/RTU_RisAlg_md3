@@ -44,13 +44,18 @@ Dim filePath As String
     filePath = "C:\Users\Kristine\source\RTU\RisAlg\3MD\dip107\src\test\resources\dip107\positive-tests.csv"
 Dim a As Double
 Dim Randresults(20)
-For I = 0 To 20
+Range("B1").Value = -249.04835
+Randresults(0) = """" + CStr(-249.04835) + """" + ", " + """" + ExcelToTestInput(Range("B3:F12")) + """"
+
+For I = 1 To 20
 'vai programmai jâsaprot milzu skaitlu zinaatniskais pieraksts???laikam buus tomeer jaasaprot...
 a = Application.WorksheetFunction.RandBetween(-999, 0) + (Application.WorksheetFunction.RandBetween(0, 100001) / 100000)
 Range("B1").Value = a
 'so have to walk it, cann not simply toString or can I?
 
-Randresults(I) = CStr(a) + ", " + """" + ExcelToTestInput(Range("B3:F12")) + """"
+'turns out that jUnit cannot parse negative decimals properly - it adds a space after each of the decimals chars???
+'so the first param MUST be in quotes as well...
+Randresults(I) = """" + CStr(a) + """" + ", " + """" + ExcelToTestInput(Range("B3:F12")) + """"
 
 'MsgBox (Randresults(I))
 Next I
@@ -71,17 +76,23 @@ Function ExcelToTestInput(ByVal myRange As Range) As String
     RangeToString = ""
     If Not myRange Is Nothing Then
         Dim myCell As Range
+        Dim tDbl As Double
         For Each myCell In myRange
+        If (Mid(myCell.Address, 4, 2) <> "3" And Mid(myCell.Address, 4, 2) <> "8" And myCell.Value <> "") Then
+        'even storing at seperate variable did not help as Excel CALCULATES differently than calc - therefore no system of counting
+        'avaliable => impossible to write any tests, because the TRUTH is not known...
+        tDbl = myCell.Value2
+        End If
         If myCell.Value = "" Then
 
         ElseIf myCell.Address = "$B$3" Or myCell.Address = "$B$8" Then
         ExcelToTestInput = ExcelToTestInput & myCell.Value & vbCrLf
         ElseIf Mid(myCell.Address, 2, 1) = "F" And Not (Mid(myCell.Address, 4, 2) = "12") Then
-        ExcelToTestInput = ExcelToTestInput & vbTab & Format(myCell, "0.00") & vbCrLf
+        ExcelToTestInput = ExcelToTestInput & vbTab & Round(tDbl, 2) & vbCrLf
         ElseIf Mid(myCell.Address, 2, 1) = "B" Then
-        ExcelToTestInput = ExcelToTestInput & Format(myCell, "0.00")
+        ExcelToTestInput = ExcelToTestInput & Round(tDbl, 2)
         Else
-            ExcelToTestInput = ExcelToTestInput & vbTab & Format(myCell, "0.00")
+            ExcelToTestInput = ExcelToTestInput & vbTab & Round(tDbl, 2)
         End If
         Next myCell
     End If

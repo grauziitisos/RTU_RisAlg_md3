@@ -54,12 +54,9 @@ public class Md2_061rmc160 {
 
     public static void testableMain(InputStream inputStream, PrintStream outputStream) {
         Scanner sc = new Scanner(inputStream);
-        // Pēdējie divi Brīvas Kaujas lauka Sākuma Leņķis Laika
-        // studenta Kaujas vieta krišanas numurs ātrums a intervāls
-        // apliecības paātrinājums g v0 (grādos) (solis) delta(t)
-        // numura cipari (m/s^2) (m/s) (s)
-
-        // 60 Zeme 9.81 B 12 @in 0.05
+        // https://blogs.oracle.com/corejavatechtips/the-need-for-bigdecimal
+        // Excel and calculator different values!!!!! Unable to get guaranteed precise test data
+        // Therefore unable to verify!!!!
         double K;
         double A[] = new double[20];
         String outputFormatString = "%1$.2f";
