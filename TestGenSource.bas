@@ -81,18 +81,18 @@ Function ExcelToTestInput(ByVal myRange As Range) As String
         If (Mid(myCell.Address, 4, 2) <> "3" And Mid(myCell.Address, 4, 2) <> "8" And myCell.Value <> "") Then
         'even storing at seperate variable did not help as Excel CALCULATES differently than calc - therefore no system of counting
         'avaliable => impossible to write any tests, because the TRUTH is not known...
-        tDbl = myCell.Value2
+        tDbl = Round(myCell.Value2, 2)
         End If
         If myCell.Value = "" Then
 
         ElseIf myCell.Address = "$B$3" Or myCell.Address = "$B$8" Then
         ExcelToTestInput = ExcelToTestInput & myCell.Value & vbCrLf
         ElseIf Mid(myCell.Address, 2, 1) = "F" And Not (Mid(myCell.Address, 4, 2) = "12") Then
-        ExcelToTestInput = ExcelToTestInput & vbTab & Round(tDbl, 2) & vbCrLf
+        ExcelToTestInput = ExcelToTestInput & vbTab & Format(tDbl, "0.00") & vbCrLf
         ElseIf Mid(myCell.Address, 2, 1) = "B" Then
-        ExcelToTestInput = ExcelToTestInput & Round(tDbl, 2)
+        ExcelToTestInput = ExcelToTestInput & Format(tDbl, "0.00")
         Else
-            ExcelToTestInput = ExcelToTestInput & vbTab & Round(tDbl, 2)
+            ExcelToTestInput = ExcelToTestInput & vbTab & Format(tDbl, "0.00")
         End If
         Next myCell
     End If

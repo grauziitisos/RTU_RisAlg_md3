@@ -8,6 +8,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -98,7 +99,7 @@ public class Md3_061rmc160OutputTests {
         if (hasOutItems)
             for (int i = 4; i <= 12; i++) {
                 // 2. masīva virsraksts
-                //ja peec vinjas (bez newline peec input, tad buus 7. ja peec shii ar \n tad 8)
+                // ja peec vinjas (bez newline peec input, tad buus 7. ja peec shii ar \n tad 8)
                 if (i == 8)
                     continue;
                 assertTrue(output[i].matches("([+-]?\\d+[\\.,]\\d{2}\\s+){4}([+-]?\\d+[\\.,]\\d{2})"),
@@ -121,76 +122,80 @@ public class Md3_061rmc160OutputTests {
         runTest(getSimulatedUserInput(input + ""), ObjectUnderTestName);
         String[] output = byteArrayOutputStream.toString().split(System.getProperty("line.separator"));
         Boolean hasOutItems = output.length > 12;
-        String pattern = "([+-]?\\d+[\\.,]\\d{2})\\s+([+-]?\\d+[\\.,]\\d{2})\\s+([+-]?\\d+[\\.,]\\d{2})\\s+([+-]?\\d+[\\.,]\\d{2})\\s+([+-]?\\d+[\\.,]\\d{2})";        if (hasOutItems)
-            for (int i = 4; i <= 12; i++){
-                //2. masīva virsraksts
-                if(i==8) continue;
-                //assertTrue(output[i].matches("([+-]?\\d+[\\.,]\\d{2}\\s+){4}([+-]?\\d+[\\.,]\\d{2})"),
+        String pattern = "([+-]?\\d+[\\.,]\\d{2})\\s+([+-]?\\d+[\\.,]\\d{2})\\s+([+-]?\\d+[\\.,]\\d{2})\\s+([+-]?\\d+[\\.,]\\d{2})\\s+([+-]?\\d+[\\.,]\\d{2})";
+        if (hasOutItems)
+            for (int i = 4; i <= 12; i++) {
+                // 2. masīva virsraksts
+                if (i == 8)
+                    continue;
+                // assertTrue(output[i].matches("([+-]?\\d+[\\.,]\\d{2}\\s+){4}([+-]?\\d+[\\.,]\\d{2})"),
                 assertTrue(output[i].matches(pattern),
                         "Line number " + (i + 1) + System.getProperty("line.separator")
                                 + "Should output result: 5 numbers per line with 2 decimal places!"
                                 + System.getProperty("line.separator") + "output was: " + output[i]
                                 + System.getProperty("line.separator"));
-            } else
+            }
+        else
             assertTrue(false,
                     "the results output should start at the fifith line outputted and have two sets of 4 rows of properly formatted results! Output had lines: "
-                            + output.length
-                            +System.getProperty("line.separator")
-                            +"output was: "+byteArrayOutputStream.toString()
-                            +System.getProperty("line.separator"));
+                            + output.length + System.getProperty("line.separator") + "output was: "
+                            + byteArrayOutputStream.toString() + System.getProperty("line.separator"));
 
-                            //region parse
-                            float aArray[][] = new float[4][5];
-                            float bArray[][] = new float[4][5];
-                            Pattern r = Pattern.compile(pattern);
-                            Matcher m;
-                            for (int i=4; i<8; i++){
-                                m=r.matcher(output[i]);
-                                //paarbaude jau bija (ka deriigi floati!) bet tāpat jāizsauc, lai grupas saformē - ielasa..
-                                m.find();
-                                for(int j=0; j<m.groupCount(); j++)
-                                    aArray[i-4][j]= Float.parseFloat(m.group(j+1));
-                            }   
-                            for (int i=9; i<=12; i++){
-                                m=r.matcher(output[i]);
-                                //paarbaude jau bija (ka deriigi floati!) bet tāpat jāizsauc, lai grupas saformē - ielasa..
-                                m.find();
-                                for(int j=0; j<m.groupCount(); j++)
-                                    bArray[i-9][j]= Float.parseFloat(m.group(j+1));
-                            }         
-                            //endregion
-                            
-                             
-                            //region prepareCheck
-                            List<Float> listPos=new ArrayList<Float>(); 
-                            List<Float> listNeg=new ArrayList<Float>();
-                            for(int i=0; i<4; i++){
-                                for(int j=0;j<5;j++){
-                                    //kas ar nulli?? Pozitīva?
-                                    if(aArray[i][j]>=0) listPos.add(aArray[i][j]);
-                                    else listNeg.add(aArray[i][j]);
-                                }
-                            } 
-                            //endregion
+        // region parse
+        BigDecimal aArray[][] = new BigDecimal[4][5];
+        BigDecimal bArray[][] = new BigDecimal[4][5];
+        Pattern r = Pattern.compile(pattern);
+        Matcher m;
+        for (int i = 4; i < 8; i++) {
+            m = r.matcher(output[i]);
+            // paarbaude jau bija (ka deriigi BigDecimali!) bet tāpat jāizsauc, lai grupas
+            // saformē - ielasa..
+            m.find();
+            for (int j = 0; j < m.groupCount(); j++)
+                aArray[i - 4][j] = new BigDecimal(m.group(j + 1));
+        }
+        for (int i = 9; i <= 12; i++) {
+            m = r.matcher(output[i]);
+            // paarbaude jau bija (ka deriigi BigDecimali!) bet tāpat jāizsauc, lai grupas
+            // saformē - ielasa..
+            m.find();
+            for (int j = 0; j < m.groupCount(); j++)
+                bArray[i - 9][j] = new BigDecimal(m.group(j + 1));
+        }
+        // endregion
 
-                            //region check
-                            int k=listPos.size(), cnt=0;
-                            for(int i=0; i<4; i++){
-                                for(int j=0;j<5;j++){
-                                    assertEquals(cnt<k? listPos.get(cnt) : listNeg.get(cnt-k), bArray[i][j], 
-                                    "The list B should be sorted list A according to specification!"
-                                    +System.getProperty("line.separator")
-                                    +(cnt >1 ? "last two elements: "+(cnt-2<k? listPos.get(cnt-2) : listNeg.get(cnt-k-2))
-                                    + " and "+(cnt-1<k? listPos.get(cnt-1) : listNeg.get(cnt-k-1)) 
-                                    +System.getProperty("line.separator")
-                                    +" should be followed by "+ (cnt<k? listPos.get(cnt) : listNeg.get(cnt-k))
-                                    +System.getProperty("line.separator")
-                                    + " but was followed by " + bArray[i][j]
-                                    :""));
-                                    cnt++;
-                                }
-                            } 
-                            //endregion
+        // region prepareCheck
+        List<BigDecimal> listPos = new ArrayList<BigDecimal>();
+        List<BigDecimal> listNeg = new ArrayList<BigDecimal>();
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 5; j++) {
+                // kas ar nulli?? Pozitīva?
+                if (aArray[i][j].compareTo(new BigDecimal("0")) >= 0)
+                    listPos.add(aArray[i][j]);
+                else
+                    listNeg.add(aArray[i][j]);
+            }
+        }
+        // endregion
+
+        // region check
+        int k = listPos.size(), cnt = 0;
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 5; j++) {
+                assertEquals(cnt < k ? listPos.get(cnt) : listNeg.get(cnt - k), bArray[i][j],
+                        "The list B should be sorted list A according to specification!"
+                                + System.getProperty("line.separator")
+                                + (cnt > 1 ? "last two elements: "
+                                        + (cnt - 2 < k ? listPos.get(cnt - 2) : listNeg.get(cnt - k - 2)) + " and "
+                                        + (cnt - 1 < k ? listPos.get(cnt - 1) : listNeg.get(cnt - k - 1))
+                                        + System.getProperty("line.separator") + " should be followed by "
+                                        + (cnt < k ? listPos.get(cnt) : listNeg.get(cnt - k))
+                                        + System.getProperty("line.separator") + " but was followed by " + bArray[i][j]
+                                        : ""));
+                cnt++;
+            }
+        }
+        // endregion
     }
 
     @ParameterizedTest

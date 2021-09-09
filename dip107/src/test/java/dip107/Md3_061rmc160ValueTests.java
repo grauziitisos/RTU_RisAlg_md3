@@ -24,8 +24,9 @@ public class Md3_061rmc160ValueTests {
         String[] expected = expect.split(System.getProperty("line.separator"));
         // expected ietver arii titles.. (3 un 8 rindas taatad vieglaak testu uzrakstiit
         // :))
-        assertEquals(output.length, 13, "The program should output exactly 13 lines to pass this test.. Sorry, no space for creative beautiful designs...");
-        assertEquals(expected.length, 10, "Malformed input data! Please check that it is 10 lines total..");
+        assertEquals(13, output.length,
+                "The program should output exactly 13 lines to pass this test.. Sorry, no space for creative beautiful designs...");
+        assertEquals(10, expected.length, "Malformed input data! Please check that it is 10 lines total..");
         for (int i = 3; i <= 12; i++)
             assertEquals(expected[i - 3], output[i]);
     }
