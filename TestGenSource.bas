@@ -32,7 +32,7 @@ Public Function calculate_calculator(Inp As Double, Multipl As Double) As Double
     
     If CalcHwnd <> 0 Then
         Set keypadDict = Build_Keys_Dict(CalcHwnd)
-        Click_Keys "|C|" + CStr(Inp) + "*" + CStr(Multipl) + "|=", CalcHwnd, keypadDict
+        Click_Keys "|CE|" + CStr(Inp) + "*" + CStr(Multipl) + "|=", CalcHwnd, keypadDict
         CalculatorResult = Get_Result(CalcHwnd)
         CalculatorExpression = Get_Expression(CalcHwnd)
         calculate_calculator = CDbl(CalculatorResult)
@@ -58,7 +58,7 @@ Public Sub Test_Automate_Calculator()
     
     If CalcHwnd <> 0 Then
         Set keypadDict = Build_Keys_Dict(CalcHwnd)
-        Click_Keys "|C|3.6+5=|SQRT||RECIP|=", CalcHwnd, keypadDict
+        Click_Keys "|CE|3.6+5=|SQRT||RECIP|=", CalcHwnd, keypadDict
         CalculatorResult = Get_Result(CalcHwnd)
         CalculatorExpression = Get_Expression(CalcHwnd)
         MsgBoxW "Result:  " & CalculatorResult & vbCrLf & _
@@ -223,7 +223,21 @@ Public Sub Click_Keys(keys As String, CalcHwnd As Long, Keypad_Dict As Dictionar
         
         If Keypad_Dict.Exists(thisKey) Then
             Set key = Keypad_Dict(thisKey)
+            If Not (key.UIelement Is Nothing) Then
             Set InvokePattern = key.UIelement.GetCurrentPattern(UIA_InvokePatternId)
+            Else
+            If thisKey = "|C|" Then
+            thisKey = "|CE|"
+            Set key = Keypad_Dict(thisKey)
+            Set InvokePattern = key.UIelement.GetCurrentPattern(UIA_InvokePatternId)
+            Else
+            If thisKey = "|CE|" Then
+            thisKey = "|C|"
+            Set key = Keypad_Dict(thisKey)
+            Set InvokePattern = key.UIelement.GetCurrentPattern(UIA_InvokePatternId)
+            End If
+            End If
+            End If
             InvokePattern.Invoke
             DoEvents
             Sleep 100
@@ -343,12 +357,13 @@ Range(addres_helper(S, 9)).Value = negatives(S - (UBound(positives) - LBound(pos
 End If
 Next S
 End Sub
-
+ 
 Sub TestGenerate()
 'Random testi
 Dim filePath As String
     filePath = "C:\Users\Kristine\source\RTU\RisAlg\3MD\dip107\src\test\resources\dip107\positive-tests.csv"
 Dim a As Double
+Dim i As Integer
 Dim Randresults(20)
 Range("B1").Value = -249.04835
 Randresults(0) = """" + CStr(-249.04835) + """" + ", " + """" + ExcelToTestInput(Range("B3:F12")) + """"
@@ -357,6 +372,10 @@ For i = 1 To 20
 'vai programmai jâsaprot milzu skaitlu zinaatniskais pieraksts???laikam buus tomeer jaasaprot...
 a = Application.WorksheetFunction.RandBetween(-999, 0) + (Application.WorksheetFunction.RandBetween(0, 100001) / 100000)
 Range("B1").Value = a
+'Now calcuate using calculator because excel calculates wrongly
+'wtf CANNOT PASS THE RETURN VALUE OF FUNCTION, MUST CREATE A VARIABLE?????
+'Test_Automate_Calculator
+fuckyou = RecalculateUsingCalculator(Range("B3:F12"))
 'so have to walk it, cann not simply toString or can I?
 
 'turns out that jUnit cannot parse negative decimals properly - it adds a space after each of the decimals chars???
@@ -378,8 +397,38 @@ Dim fso As Object
     Fileout.Close
 End Sub
 
+'RecalculateUsingCalculator
+Function RecalculateUsingCalculator(ByVal myRange As Range) As String
+    If Not myRange Is Nothing Then
+        Dim myCell As Range
+        Dim prevCell As Range
+        Dim tDbl As Double
+        For Each myCell In myRange
+        If (Mid(myCell.Address, 4, 2) <> "3" And Mid(myCell.Address, 4, 2) <> "8" And myCell.Value <> "") Then
+        'even storing at seperate variable did not help as Excel CALCULATES differently than calc - therefore no system of counting
+        'avaliable => impossible to write any tests, because the TRUTH is not known...
+        If myCell.Address = "$B$4" Then
+        myCell.Value = 0.1
+        Else
+        Set prevCell = Range(GetPrevAddress(Mid(myCell.Address, 2, 1) + Mid(myCell.Address, 4, 2)))
+        myCell.Value = calculate_calculator(CDbl(Range("B1").Value2), CDbl(prevCell.Value2))
+        End If
+        End If
+        Next myCell
+    End If
+End Function
+
+Function GetPrevAddress(currAddr As String) As String
+rrow = CInt(Mid(currAddr, 2, 1))
+col = Mid(currAddr, 1, 1)
+If col = "B" Then
+GetPrevAddress = "F" + CStr(rrow - 1)
+Else
+GetPrevAddress = CStr(Chr(Asc(col) - 1)) + CStr(rrow)
+End If
+End Function
+
 Function ExcelToTestInput(ByVal myRange As Range) As String
-    RangeToString = ""
     If Not myRange Is Nothing Then
         Dim myCell As Range
         Dim tDbl As Double
@@ -417,3 +466,5 @@ End Function
 Function addres_helper(a As Byte, startRow As Byte) As String
 addres_helper = CStr(Chr(66 + (a Mod 5))) + CStr(Application.WorksheetFunction.Floor_Math(a / 5, 1) + startRow)
 End Function
+
+
