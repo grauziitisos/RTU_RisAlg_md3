@@ -18,7 +18,7 @@ Option Explicit
     Private Declare Sub Sleep Lib "kernel32" (ByVal milliseconds As Long)
 #End If
 
-Public Function calculate_calculator(Inp As Double, Multipl As Double) As Double
+Public Function calculate_calculator(inp As String, Multipl As String) As String
     #If VBA7 Then
         Dim CalcHwnd As LongPtr
     #Else
@@ -32,12 +32,13 @@ Public Function calculate_calculator(Inp As Double, Multipl As Double) As Double
     
     If CalcHwnd <> 0 Then
         Set keypadDict = Build_Keys_Dict(CalcHwnd)
-        Click_Keys "|CE|(" + Replace(Replace(CStr(Inp), "E-", "E|+-|"), "E+", "E") + ")X(" + Replace(Replace(CStr(Multipl), "E-", "E|+-|"), "E+", "E") + ")=", CalcHwnd, keypadDict
+        Click_Keys "|CE|(" + Replace(Replace(UCase(inp), "E-", "E|+-|"), "E+", "E") + ")X(" + Replace(Replace(UCase(Multipl), "E-", "E|+-|"), "E+", "E") + ")=", CalcHwnd, keypadDict
         CalculatorResult = Get_Result(CalcHwnd)
-        calculate_calculator = CDbl(CalculatorResult)
+        'remove thousands seperator!
+        calculate_calculator = Replace(CalculatorResult, ",", "")
     Else
         MsgBox "Calculator isn't running"
-        calculate_calculator = 0#
+        calculate_calculator = "0.0"
     End If
 End Function
 
@@ -320,9 +321,9 @@ Public Function Get_Expression(CalcHwnd As Long) As String
 End Function
 
 Sub Button1_Click()
-Dim ins(20) As Double
-Dim positives() As Double
-Dim negatives() As Double
+Dim ins(20) As String
+Dim positives() As String
+Dim negatives() As String
 Dim insPrint(20) As String
 Dim currValue As Double
 Dim i As Byte, ptr As Byte, S As Byte
@@ -331,11 +332,11 @@ currValue = CDbl(Range(addres_helper(i, 4)).Value)
 If currValue >= 0 Then
 ptr = getNextIndexForArray(positives)
 ReDim Preserve positives(ptr)
-positives(ptr) = currValue
+positives(ptr) = Range(addres_helper(i, 4)).Value
 Else
 ptr = getNextIndexForArray(negatives)
 ReDim Preserve negatives(ptr)
-negatives(ptr) = currValue
+negatives(ptr) = Range(addres_helper(i, 4)).Value
 End If
 
 Next i
@@ -350,6 +351,7 @@ For i = (UBound(positives) - LBound(positives) + 1) To UBound(positives) - LBoun
 'MsgBox (Join(insPrint, vbCrLf))
 'Sheet output
 For S = 0 To 19
+Range(addres_helper(S, 9)).NumberFormat = "@"
 If S <= UBound(positives) - LBound(positives) Then
 Range(addres_helper(S, 9)).Value = positives(S)
 Else
@@ -360,16 +362,21 @@ End Sub
  
 Sub TestGenerate()
 'Random testi
+'fuck = SplitRe("-2.32758848538112E+28", "[eE]")
+'format_helper ("-2.32758848538112E-3")
 Dim filePath As String
     filePath = "C:\Users\Kristine\source\RTU\RisAlg\3MD\dip107\src\test\resources\dip107\positive-tests.csv"
 Dim a As Double
 Dim i As Integer
 Dim Randresults(20)
-Dim fuckyou As String
+Dim fuckyou
 Range("B1").Value = -249.04835
+fuckyou = RecalculateUsingCalculator(Range("B4:F7"))
+'so have to walk it, cann not simply toString or can I?
+Button1_Click
 Randresults(0) = """" + CStr(-249.04835) + """" + ", " + """" + ExcelToTestInput(Range("B3:F12")) + """"
 
-For i = 1 To 20
+For i = 1 To 19
 'vai programmai jâsaprot milzu skaitlu zinaatniskais pieraksts???laikam buus tomeer jaasaprot...
 a = Application.WorksheetFunction.RandBetween(-999, 0) + (Application.WorksheetFunction.RandBetween(0, 100001) / 100000)
 Range("B1").Value = a
@@ -378,7 +385,7 @@ Range("B1").Value = a
 'Test_Automate_Calculator
 fuckyou = RecalculateUsingCalculator(Range("B4:F7"))
 'so have to walk it, cann not simply toString or can I?
-
+Button1_Click
 'turns out that jUnit cannot parse negative decimals properly - it adds a space after each of the decimals chars???
 'so the first param MUST be in quotes as well...
 Randresults(i) = """" + CStr(a) + """" + ", " + """" + ExcelToTestInput(Range("B3:F12")) + """"
@@ -399,18 +406,19 @@ Dim fso As Object
 End Sub
 
 'RecalculateUsingCalculator
-Function RecalculateUsingCalculator(ByVal myRange As Range) As String
+Function RecalculateUsingCalculator(ByVal myRange As Range)
     If Not myRange Is Nothing Then
         Dim myCell As Range
         Dim prevCell As Range
-        Dim tDbl As Double
+        Dim tStr As String
         For Each myCell In myRange
         If myCell.Address = "$B$4" Then
         myCell.Value = 0.1
-        tDbl = 0.1
+        tStr = "0.1"
         Else
-        tDbl = calculate_calculator(CDbl(Range("B1").Value2), tDbl)
-        myCell.Value = tDbl
+        tStr = calculate_calculator(CStr(Range("B1").Value2), tStr)
+        myCell.NumberFormat = "@"
+        myCell.Value = UCase(tStr)
         End If
         Next myCell
     End If
@@ -431,29 +439,29 @@ End Function
 Function ExcelToTestInput(ByVal myRange As Range) As String
     If Not myRange Is Nothing Then
         Dim myCell As Range
-        Dim tDbl As Double
+        Dim tStr As String
         For Each myCell In myRange
         If (Mid(myCell.Address, 4, 2) <> "3" And Mid(myCell.Address, 4, 2) <> "8" And myCell.Value <> "") Then
         'even storing at seperate variable did not help as Excel CALCULATES differently than calc - therefore no system of counting
         'avaliable => impossible to write any tests, because the TRUTH is not known...
-        tDbl = Round(myCell.Value2, 2)
+        tStr = format_helper(myCell.Value2)
         End If
         If myCell.Value = "" Then
 
         ElseIf myCell.Address = "$B$3" Or myCell.Address = "$B$8" Then
         ExcelToTestInput = ExcelToTestInput & myCell.Value & vbCrLf
         ElseIf Mid(myCell.Address, 2, 1) = "F" And Not (Mid(myCell.Address, 4, 2) = "12") Then
-        ExcelToTestInput = ExcelToTestInput & vbTab & Format(tDbl, "0.00") & vbCrLf
+        ExcelToTestInput = ExcelToTestInput & vbTab & tStr & vbCrLf
         ElseIf Mid(myCell.Address, 2, 1) = "B" Then
-        ExcelToTestInput = ExcelToTestInput & Format(tDbl, "0.00")
-        Else
-            ExcelToTestInput = ExcelToTestInput & vbTab & Format(tDbl, "0.00")
+        ExcelToTestInput = ExcelToTestInput & tStr
+        ElseIf (Mid(myCell.Address, 4, 2) <> "3" And Mid(myCell.Address, 4, 2) <> "8" And myCell.Value <> "") Then
+            ExcelToTestInput = ExcelToTestInput & vbTab & tStr
         End If
         Next myCell
     End If
 End Function
 
-Function getNextIndexForArray(a() As Double) As Byte
+Function getNextIndexForArray(a() As String) As Byte
 If (Not a) = -1 Then
     ' Array has NOT been initialized
     getNextIndexForArray = 0
@@ -467,4 +475,113 @@ Function addres_helper(a As Byte, startRow As Byte) As String
 addres_helper = CStr(Chr(66 + (a Mod 5))) + CStr(Application.WorksheetFunction.Floor_Math(a / 5, 1) + startRow)
 End Function
 
+Public Function h_discount(a As String) As Integer
+If a > 15 Then
+h_discount = 250
+Else
+h_discount = 0
+End If
+End Function
 
+Public Function format_helper(inpt As String) As String
+Dim Sign As String
+Dim power As Double
+Dim deciSp As String
+Dim baseRH As String
+Dim baseLH As String
+Dim num As Integer
+Dim str() As String
+Dim strr() As String
+Dim inp As String
+inp = CStr(inpt)
+
+If (Mid(inp, 1, 1) = "-") Then
+Sign = "-"
+inp = Mid(inp, 2, Len(inp) - 1)
+End If
+str = SplitRe(inp, "[eE]")
+If (UBound(str) - LBound(str)) < 1 Then
+format_helper = round_helper(Sign + inp)
+Exit Function
+End If
+
+power = CDbl(str(1))
+deciSp = "."
+strr = Split(str(0), deciSp)
+If (UBound(strr) - LBound(strr)) < 1 Then
+baseRH = ""
+Else
+baseRH = strr(1)
+End If
+baseLH = strr(0)
+
+If (power >= 0) Then
+If (power > Len(baseRH)) Then
+baseRH = baseRH + String(power - Len(baseRH), "0")
+End If
+'baseRH = baseRH.slice(0,power) + deciSp + baseRH.slice(power);
+'should test could it be that power>= Len(baseRH)-1?
+baseRH = Mid(baseRH, 1, power) + deciSp + Mid(baseRH, power)
+'if (baseRH.charAt(baseRH.length-1) ==deciSp) baseRH =baseRH.slice(0,-1); // If decSep at RH end? => remove it
+If (Mid(baseRH, Len(baseRH), 1) = deciSp) Then
+baseRH = Mid(baseRH, 1, Len(baseRH) - 2)
+End If
+Else
+'num= Math.abs(power) - baseLH.length;
+num = Abs(power) - Len(baseLH)
+'if (num>0) baseLH = "0".repeat(num) + baseLH;                       // Pad with "0" at LH
+If (num > 0) Then
+baseLH = String(num, "0") + baseLH
+End If
+'baseLH = baseLH.slice(0, power) + deciSp + baseLH.slice(power);     // Insert "." at the correct place into LH base
+baseLH = Mid(baseLH, 1, Len(baseLH) + power) + deciSp + Mid(baseLH, 1 + Len(baseLH) + power, Abs(power))
+'if (baseLH.charAt(0) == deciSp) baseLH="0" + baseLH;
+If (Mid(baseLH, 1, 1) = deciSp) Then
+baseLH = "0" + baseLH
+End If
+End If
+'return Sign + (baseLH + baseRH).replace(/^0*(\d+|\d+\.\d+?)\.?0*$/,"$1");
+format_helper = round_helper(Sign + (baseLH + baseRH))
+End Function
+
+'for now works only with numdigits=2
+Function round_helper(inp As String) As String
+Dim numdigits As Integer
+numdigits = 2
+Dim str() As String
+str = Split(inp, ".")
+If UBound(str) - LBound(str) = 1 Then
+
+If (Len(str(1)) > numdigits) Then
+If (CInt(Mid(str(1), numdigits + 1, 1)) >= 5) Then
+If (CInt(Mid(str(1), numdigits, 1)) <> 9) Then
+round_helper = str(0) + "." + Mid(str(1), 1, numdigits - 1) + CStr(CInt(Mid(str(1), numdigits, 1)) + 1)
+Else
+'Todo add while cycle for rounding up to before the decimal seperator!
+round_helper = str(0) + "." + Mid(str(1), 1, numdigits - 2) + CStr(CInt(Mid(str(1), numdigits - 2 + 1, 1)) + 1) + "0"
+End If
+Else
+round_helper = str(0) + "." + Mid(str(1), 1, 2)
+End If
+Else
+round_helper = str(0) + "." + str(1) + String(numdigits - Len(str(1)), "0")
+End If
+
+End If
+
+End Function
+
+'nesaturees vbNullChar taapeec varu drosi izmantot so!
+Public Function SplitRe(Text As String, Pattern As String, Optional IgnoreCase As Boolean) As String()
+    Static re As Object
+
+    If re Is Nothing Then
+        Set re = CreateObject("VBScript.RegExp")
+        re.Global = True
+        re.MultiLine = True
+    End If
+
+    re.IgnoreCase = IgnoreCase
+    re.Pattern = Pattern
+    SplitRe = Strings.Split(re.Replace(Text, ChrW(-1)), ChrW(-1))
+End Function
