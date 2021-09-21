@@ -1,13 +1,319 @@
 Attribute VB_Name = "Module1"
+
+
+
+
+
+'References required:
+'Microsoft Scripting Runtime
+'UIAutomationClient
+
+Option Explicit
+
+#If VBA7 Then
+    Private Declare PtrSafe Function MessageBoxW Lib "User32" (ByVal hWnd As LongPtr, ByVal lpText As LongPtr, ByVal lpCaption As LongPtr, ByVal uType As Long) As Long
+    Private Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
+#Else
+    Private Declare Function MessageBoxW Lib "User32" (ByVal hWnd As Long, ByVal lpText As Long, ByVal lpCaption As Long, ByVal uType As Long) As Long
+    Private Declare Sub Sleep Lib "kernel32" (ByVal milliseconds As Long)
+#End If
+
+Public Function calculate_calculator(Inp As Double, Multipl As Double) As Double
+    #If VBA7 Then
+        Dim CalcHwnd As LongPtr
+    #Else
+        Dim CalcHwnd As Long
+    #End If
+    Dim keypadDict As Scripting.Dictionary
+    Dim CalculatorResult As String
+    Dim CalculatorExpression As String
+    
+    CalcHwnd = Find_Calculator()
+    
+    If CalcHwnd <> 0 Then
+        Set keypadDict = Build_Keys_Dict(CalcHwnd)
+        Click_Keys "|C|" + CStr(Inp) + "*" + CStr(Multipl) + "|=", CalcHwnd, keypadDict
+        CalculatorResult = Get_Result(CalcHwnd)
+        CalculatorExpression = Get_Expression(CalcHwnd)
+        calculate_calculator = CDbl(CalculatorResult)
+    Else
+        MsgBox "Calculator isn't running"
+        calculate_calculator = 0#
+    End If
+End Function
+
+
+Public Sub Test_Automate_Calculator()
+
+    #If VBA7 Then
+        Dim CalcHwnd As LongPtr
+    #Else
+        Dim CalcHwnd As Long
+    #End If
+    Dim keypadDict As Scripting.Dictionary
+    Dim CalculatorResult As String
+    Dim CalculatorExpression As String
+    
+    CalcHwnd = Find_Calculator()
+    
+    If CalcHwnd <> 0 Then
+        Set keypadDict = Build_Keys_Dict(CalcHwnd)
+        Click_Keys "|C|3.6+5=|SQRT||RECIP|=", CalcHwnd, keypadDict
+        CalculatorResult = Get_Result(CalcHwnd)
+        CalculatorExpression = Get_Expression(CalcHwnd)
+        MsgBoxW "Result:  " & CalculatorResult & vbCrLf & _
+                "Expression: " & CalculatorExpression
+    Else
+        MsgBox "Calculator isn't running"
+    End If
+    
+End Sub
+
+
+Public Function MsgBoxW(Prompt As String, Optional Buttons As VbMsgBoxStyle = vbOKOnly, Optional Title As String = "Microsoft Excel") As VbMsgBoxResult
+    Prompt = Prompt & vbNullChar 'Add null terminators
+    Title = Title & vbNullChar
+    MsgBoxW = MessageBoxW(Application.hWnd, StrPtr(Prompt), StrPtr(Title), Buttons)
+End Function
+
+
+#If VBA7 Then
+Public Function Find_Calculator() As LongPtr
+#Else
+Public Function Find_Calculator() As Long
+#End If
+   
+    'Find the Calculator window and return its window handle
+
+    Dim UIAuto As IUIAutomation
+    Dim Desktop As IUIAutomationElement
+    Dim CalcWindow As IUIAutomationElement
+    Dim ControlTypeAndNameCond As IUIAutomationCondition
+    Dim WindowPattern As IUIAutomationWindowPattern
+    
+    Find_Calculator = 0
+
+    'Create UIAutomation object
+    
+    Set UIAuto = New CUIAutomation
+    
+    'Conditions to find the main Calculator window on the Desktop
+    'ControlType:   UIA_WindowControlTypeId (0xC370)
+    'Name:          "Calculator"
+    
+    With UIAuto
+        Set Desktop = .GetRootElement
+        Set ControlTypeAndNameCond = .CreateAndCondition(.CreatePropertyCondition(UIA_ControlTypePropertyId, UIA_WindowControlTypeId), _
+                                                         .CreatePropertyCondition(UIA_NamePropertyId, "Calculator"))
+    End With
+    Set CalcWindow = Desktop.FindFirst(TreeScope_Children, ControlTypeAndNameCond)
+    
+    If Not CalcWindow Is Nothing Then
+    
+        'Restore the Calculator window, because it must not be minimised (off screen/iconic) in order to find the keypad keys
+        
+        If CalcWindow.CurrentIsOffscreen Then
+            Set WindowPattern = CalcWindow.GetCurrentPattern(UIA_WindowPatternId)
+            WindowPattern.SetWindowVisualState WindowVisualState.WindowVisualState_Normal
+            DoEvents
+            Sleep 100
+        End If
+        
+        'Return the Calculator's window handle
+        
+        Find_Calculator = CalcWindow.GetCurrentPropertyValue(UIA_NativeWindowHandlePropertyId)
+                
+    End If
+
+End Function
+
+
+#If VBA7 Then
+Public Function Build_Keys_Dict(CalcHwnd As LongPtr) As Scripting.Dictionary
+#Else
+Public Function Build_Keys_Dict(CalcHwnd As Long) As Scripting.Dictionary
+#End If
+
+    'Create a dictionary which maps each keypad key to its UI automation element via the AutomationId string
+    
+    Dim keysMapping As Variant
+    Dim i As Long
+    Dim key As cKey
+    
+    keysMapping = Split("0,num0Button,1,num1Button,2,num2Button,3,num3Button,4,num4Button,5,num5Button,6,num6Button,7,num7Button,8,num8Button,9,num9Button," & _
+                        ".,decimalSeparatorButton,/,divideButton,X,multiplyButton,-,minusButton,+,plusButton,=,equalButton,%,percentButton," & _
+                        "|+-|,negateButton,|RECIP|,invertButton,|SQR|,xpower2Button,|SQRT|,squareRootButton," & _
+                        "|CE|,clearEntryButton,|C|,clearButton,|BS|,backSpaceButton," & _
+                        "|MC|,ClearMemoryButton,|MR|,MemRecall,|M+|,MemPlus,|M-|,MemMinus,|MS|,memButton", ",")
+    
+    Set Build_Keys_Dict = New Scripting.Dictionary
+   
+    For i = 0 To UBound(keysMapping) Step 2
+        Set key = New cKey
+        key.keypadKey = keysMapping(i)
+        Set key.UIelement = Find_Key(CalcHwnd, CStr(keysMapping(i + 1)))
+        Build_Keys_Dict.Add keysMapping(i), key
+    Next
+
+End Function
+
+
+#If VBA7 Then
+Private Function Find_Key(CalcHwnd As LongPtr, keyAutomationId As String) As IUIAutomationElement
+#Else
+Private Function Find_Key(CalcHwnd As Long, keyAutomationId As String) As IUIAutomationElement
+#End If
+
+    'Find the specified Calculator key by its AutomationId
+    
+    Dim UIAuto As IUIAutomation
+    Dim Calc As IUIAutomationElement
+    Dim KeyCond As IUIAutomationCondition
+    
+    'Get the Calculator automation element from its window handle
+    
+    Set UIAuto = New CUIAutomation
+    Set Calc = UIAuto.ElementFromHandle(ByVal CalcHwnd)
+    
+    'Condition to find the specified Calculator key, for example
+    'AutomationId:   "num3Button"
+    
+    Set KeyCond = UIAuto.CreatePropertyCondition(UIA_AutomationIdPropertyId, keyAutomationId)
+    
+    'Must use TreeScope_Descendants to find the keypad keys, rather than TreeScope_Children, because the Calculator keys are not immediate children of the Calculator window.
+    'TreeScope_Descendants searches the element's descendants, including children.  TreeScope_Children searches only the element's immediate children.
+    'Note that the memory keys don't exist if the Calculator is in 'Keep on top' mode
+    
+    Set Find_Key = Calc.FindFirst(TreeScope_Descendants, KeyCond)
+    
+End Function
+
+
+#If VBA7 Then
+Public Sub Click_Keys(keys As String, CalcHwnd As LongPtr, Keypad_Dict As Dictionary)
+#Else
+Public Sub Click_Keys(keys As String, CalcHwnd As Long, Keypad_Dict As Dictionary)
+#End If
+
+    'Automate the Calculator by clicking the specified keys
+
+    Dim UIAuto As IUIAutomation
+    Dim Calc As IUIAutomationElement
+    Dim InvokePattern As IUIAutomationInvokePattern
+    Dim i As Long, p As Long
+    Dim thisKey As String
+    Dim key As cKey
+    
+    'Get the Calculator automation element from its window handle
+    
+    Set UIAuto = New CUIAutomation
+    Set Calc = UIAuto.ElementFromHandle(ByVal CalcHwnd)
+    
+    'Parse the keys string, looking up each key in the keypad dictionary and clicking the key via its UIAutomation element
+    
+    For i = 1 To Len(keys)
+    
+        thisKey = UCase(Mid(keys, i, 1))
+        If thisKey = "|" Then
+            'Special key surrounded by "|"
+            p = InStr(i + 1, keys, "|")
+            thisKey = Mid(keys, i, p + 1 - i)
+            i = p
+        End If
+        
+        If Keypad_Dict.Exists(thisKey) Then
+            Set key = Keypad_Dict(thisKey)
+            Set InvokePattern = key.UIelement.GetCurrentPattern(UIA_InvokePatternId)
+            InvokePattern.Invoke
+            DoEvents
+            Sleep 100
+        Else
+            MsgBox "Key '" & thisKey & "' not found in keypad dictionary. Check syntax of keys argument", vbExclamation
+        End If
+        
+    Next
+        
+End Sub
+
+
+#If VBA7 Then
+Public Function Get_Result(CalcHwnd As LongPtr) As String
+#Else
+Public Function Get_Result(CalcHwnd As Long) As String
+#End If
+
+    'Extract the Calculator result string
+    
+    Dim UIAuto As IUIAutomation
+    Dim Calc As IUIAutomationElement
+    Dim ResultCond As IUIAutomationCondition
+    Dim Result As IUIAutomationElement
+    
+    'Get the Calculator automation element from its window handle
+    
+    Set UIAuto = New CUIAutomation
+    Set Calc = UIAuto.ElementFromHandle(ByVal CalcHwnd)
+    
+    'Condition to find the Calculator results
+    'Name:   "Display is 7.82842712474619"
+    'AutomationId:   "CalculatorResults"
+    
+    Set ResultCond = UIAuto.CreatePropertyCondition(UIA_AutomationIdPropertyId, "CalculatorResults")
+    Set Result = Calc.FindFirst(TreeScope_Descendants, ResultCond)
+    
+    If Result Is Nothing Then
+        Set ResultCond = UIAuto.CreatePropertyCondition(UIA_AutomationIdPropertyId, "CalculatorAlwaysOnTopResults")
+        Set Result = Calc.FindFirst(TreeScope_Descendants, ResultCond)
+    End If
+    
+    Get_Result = Mid(Result.CurrentName, InStr(Result.CurrentName, " is ") + Len(" is "))
+    
+End Function
+
+
+#If VBA7 Then
+Public Function Get_Expression(CalcHwnd As LongPtr) As String
+#Else
+Public Function Get_Expression(CalcHwnd As Long) As String
+#End If
+
+    'Extract the Calculator expression string
+
+    Dim UIAuto As IUIAutomation
+    Dim Calc As IUIAutomationElement
+    Dim ExpressionCond As IUIAutomationCondition
+    Dim Expression As IUIAutomationElement
+    
+    'Get the IE automation element from its window handle
+    
+    Set UIAuto = New CUIAutomation
+    Set Calc = UIAuto.ElementFromHandle(ByVal CalcHwnd)
+    
+    'Condition to find the Calculator expression, if it exists
+    'Name:   "Expression is ?(8) + 5="
+    'AutomationId:   "CalculatorExpression"
+    
+    Set ExpressionCond = UIAuto.CreatePropertyCondition(UIA_AutomationIdPropertyId, "CalculatorExpression")
+    
+    Set Expression = Calc.FindFirst(TreeScope_Descendants, ExpressionCond)
+    
+    If Not Expression Is Nothing Then
+        Get_Expression = Mid(Expression.CurrentName, InStr(Expression.CurrentName, " is ") + Len(" is "))
+    Else
+        Get_Expression = ""
+    End If
+    
+End Function
+
 Sub Button1_Click()
 Dim ins(20) As Double
 Dim positives() As Double
 Dim negatives() As Double
 Dim insPrint(20) As String
 Dim currValue As Double
-Dim I As Byte, ptr As Byte, S As Byte
-For I = 0 To 19
-currValue = CDbl(Range(addres_helper(I, 4)).Value)
+Dim i As Byte, ptr As Byte, S As Byte
+For i = 0 To 19
+currValue = CDbl(Range(addres_helper(i, 4)).Value)
 If currValue >= 0 Then
 ptr = getNextIndexForArray(positives)
 ReDim Preserve positives(ptr)
@@ -18,15 +324,15 @@ ReDim Preserve negatives(ptr)
 negatives(ptr) = currValue
 End If
 
-Next I
+Next i
 'debug output
-For I = 0 To UBound(positives) - LBound(positives)
-     insPrint(I) = CStr(positives(I))
- Next I
+For i = 0 To UBound(positives) - LBound(positives)
+     insPrint(i) = CStr(positives(i))
+ Next i
 
-For I = (UBound(positives) - LBound(positives) + 1) To UBound(positives) - LBound(positives) + 1 + UBound(negatives) - LBound(negatives)
-     insPrint(I) = CStr(negatives(I - (UBound(positives) - LBound(positives) + 1)))
- Next I
+For i = (UBound(positives) - LBound(positives) + 1) To UBound(positives) - LBound(positives) + 1 + UBound(negatives) - LBound(negatives)
+     insPrint(i) = CStr(negatives(i - (UBound(positives) - LBound(positives) + 1)))
+ Next i
 'MsgBox (Join(insPrint, vbCrLf))
 'Sheet output
 For S = 0 To 19
@@ -47,7 +353,7 @@ Dim Randresults(20)
 Range("B1").Value = -249.04835
 Randresults(0) = """" + CStr(-249.04835) + """" + ", " + """" + ExcelToTestInput(Range("B3:F12")) + """"
 
-For I = 1 To 20
+For i = 1 To 20
 'vai programmai jâsaprot milzu skaitlu zinaatniskais pieraksts???laikam buus tomeer jaasaprot...
 a = Application.WorksheetFunction.RandBetween(-999, 0) + (Application.WorksheetFunction.RandBetween(0, 100001) / 100000)
 Range("B1").Value = a
@@ -55,10 +361,10 @@ Range("B1").Value = a
 
 'turns out that jUnit cannot parse negative decimals properly - it adds a space after each of the decimals chars???
 'so the first param MUST be in quotes as well...
-Randresults(I) = """" + CStr(a) + """" + ", " + """" + ExcelToTestInput(Range("B3:F12")) + """"
+Randresults(i) = """" + CStr(a) + """" + ", " + """" + ExcelToTestInput(Range("B3:F12")) + """"
 
 'MsgBox (Randresults(I))
-Next I
+Next i
 'add incorrect input test
 Dim wrongInputs() As String
 wrongInputs = Split("-1-2-3, " + Chr(34) + "input-output error" + Chr(34) + ":wasd, " + Chr(34) + "input-output error" + Chr(34) + ":âð, " + Chr(34) + "input-output error" + Chr(34) + ":0.1.23.4.5, " + Chr(34) + "input-output error" + Chr(34) + ":", ":")
