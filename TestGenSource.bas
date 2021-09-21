@@ -32,9 +32,8 @@ Public Function calculate_calculator(Inp As Double, Multipl As Double) As Double
     
     If CalcHwnd <> 0 Then
         Set keypadDict = Build_Keys_Dict(CalcHwnd)
-        Click_Keys "|CE|" + CStr(Inp) + "*" + CStr(Multipl) + "|=", CalcHwnd, keypadDict
+        Click_Keys "|CE|(" + Replace(Replace(CStr(Inp), "E-", "E|+-|"), "E+", "E") + ")X(" + Replace(Replace(CStr(Multipl), "E-", "E|+-|"), "E+", "E") + ")=", CalcHwnd, keypadDict
         CalculatorResult = Get_Result(CalcHwnd)
-        CalculatorExpression = Get_Expression(CalcHwnd)
         calculate_calculator = CDbl(CalculatorResult)
     Else
         MsgBox "Calculator isn't running"
@@ -142,6 +141,7 @@ Public Function Build_Keys_Dict(CalcHwnd As Long) As Scripting.Dictionary
     
     keysMapping = Split("0,num0Button,1,num1Button,2,num2Button,3,num3Button,4,num4Button,5,num5Button,6,num6Button,7,num7Button,8,num8Button,9,num9Button," & _
                         ".,decimalSeparatorButton,/,divideButton,X,multiplyButton,-,minusButton,+,plusButton,=,equalButton,%,percentButton," & _
+                        "(,openParenthesisButton,),closeParenthesisButton,E,expButton," & _
                         "|+-|,negateButton,|RECIP|,invertButton,|SQR|,xpower2Button,|SQRT|,squareRootButton," & _
                         "|CE|,clearEntryButton,|C|,clearButton,|BS|,backSpaceButton," & _
                         "|MC|,ClearMemoryButton,|MR|,MemRecall,|M+|,MemPlus,|M-|,MemMinus,|MS|,memButton", ",")
@@ -365,6 +365,7 @@ Dim filePath As String
 Dim a As Double
 Dim i As Integer
 Dim Randresults(20)
+Dim fuckyou As String
 Range("B1").Value = -249.04835
 Randresults(0) = """" + CStr(-249.04835) + """" + ", " + """" + ExcelToTestInput(Range("B3:F12")) + """"
 
@@ -419,7 +420,9 @@ Function RecalculateUsingCalculator(ByVal myRange As Range) As String
 End Function
 
 Function GetPrevAddress(currAddr As String) As String
-rrow = CInt(Mid(currAddr, 2, 1))
+Dim rrow As Integer
+Dim col As String
+rrow = CInt(Mid(currAddr, 2, Len(currAddr) - 1))
 col = Mid(currAddr, 1, 1)
 If col = "B" Then
 GetPrevAddress = "F" + CStr(rrow - 1)
