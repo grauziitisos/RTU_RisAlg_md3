@@ -376,7 +376,7 @@ Range("B1").Value = a
 'Now calcuate using calculator because excel calculates wrongly
 'wtf CANNOT PASS THE RETURN VALUE OF FUNCTION, MUST CREATE A VARIABLE?????
 'Test_Automate_Calculator
-fuckyou = RecalculateUsingCalculator(Range("B3:F12"))
+fuckyou = RecalculateUsingCalculator(Range("B4:F7"))
 'so have to walk it, cann not simply toString or can I?
 
 'turns out that jUnit cannot parse negative decimals properly - it adds a space after each of the decimals chars???
@@ -405,15 +405,12 @@ Function RecalculateUsingCalculator(ByVal myRange As Range) As String
         Dim prevCell As Range
         Dim tDbl As Double
         For Each myCell In myRange
-        If (Mid(myCell.Address, 4, 2) <> "3" And Mid(myCell.Address, 4, 2) <> "8" And myCell.Value <> "") Then
-        'even storing at seperate variable did not help as Excel CALCULATES differently than calc - therefore no system of counting
-        'avaliable => impossible to write any tests, because the TRUTH is not known...
         If myCell.Address = "$B$4" Then
         myCell.Value = 0.1
+        tDbl = 0.1
         Else
-        Set prevCell = Range(GetPrevAddress(Mid(myCell.Address, 2, 1) + Mid(myCell.Address, 4, 2)))
-        myCell.Value = calculate_calculator(CDbl(Range("B1").Value2), CDbl(prevCell.Value2))
-        End If
+        tDbl = calculate_calculator(CDbl(Range("B1").Value2), tDbl)
+        myCell.Value = tDbl
         End If
         Next myCell
     End If
